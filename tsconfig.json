@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "lib": ["es6", "dom"],
+    "stripInternal": true,
+    "noUnusedLocals": false,
+    "strict": true,
+    "target": "es2020",
+    "module": "node16",
+    "newLine": "lf",
+    "moduleResolution": "node16",
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true
+  },
+  "include": ["src/*.ts"]
+}
