@@ -1,7 +1,7 @@
 {
   "name": "@inkdropapp/live-export",
   "version": "0.1.0",
-  "description": "",
+  "description": "A library for programmatically exoprting notes to local filesystem from Inkdrop",
   "type": "module",
   "exports": {
     "import": "./lib/index.js",
