@@ -14,7 +14,7 @@
     "build": "rollup -c",
     "lint": "eslint src __tests__",
     "test": "NODE_OPTIONS=--experimental-vm-modules DEBUG=inkdrop:* jest --config jest.config.js --runInBand",
-    "prepublishOnly": "npm-run-all lint test build"
+    "prepublishOnly": "npm-run-all lint build"
   },
   "keywords": [
     "Inkdrop"
