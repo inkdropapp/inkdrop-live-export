@@ -22,6 +22,7 @@ interface LiveExportConfig {
 }
 
 interface ExportParams {
+  live?: boolean
   bookId: string
   since?: number
   filter?: (note: Note) => boolean
@@ -252,12 +253,20 @@ export class LiveExporter {
     }
   }
 
+  async start(
+    params: ExportParams & { live: true }
+  ): Promise<{ stop: () => void }>
+  async start(params: ExportParams & { live: undefined | false }): Promise<true>
   async start(params: ExportParams) {
     const notes = await this.getNotes(params.bookId)
     for (const n of notes) {
       await this.exportNote({ ...n }, params)
     }
 
-    return this.watchChanges(params)
+    if (params.live) {
+      return this.watchChanges(params)
+    } else {
+      return true
+    }
   }
 }

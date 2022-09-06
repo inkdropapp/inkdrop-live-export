@@ -34,6 +34,7 @@ test('Get notes with bookId', async () => {
 
 test('Export notes', async () => {
   const sub = await liveExport.start({
+    live: true,
     bookId: 'book:9dc6a7a7-a0e4-4eeb-997c-32b385767dc2',
     pathForNote: ({ note, frontmatter }) => {
       if (frontmatter.slug) {
