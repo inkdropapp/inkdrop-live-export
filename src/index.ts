@@ -8,7 +8,7 @@ import remarkStringify from 'remark-stringify'
 import { Root } from 'remark-parse/lib/index.js'
 import { visit } from 'unist-util-visit'
 import yaml from 'js-yaml'
-import { YAML, Image as ImageNode } from 'mdast'
+import { YAML, Image as ImageNode, Link as LinkNode } from 'mdast'
 
 const log = debug('inkdrop:export')
 
@@ -30,6 +30,10 @@ interface ExportParams {
     note: Note
     frontmatter: YAMLData
   }) => string | undefined | null | false
+  urlForNote?: (data: {
+    note: Note
+    frontmatter: YAMLData
+  }) => string | undefined | null | false
   pathForFile: (data: {
     mdastNode: ImageNode
     note: Note
@@ -37,7 +41,7 @@ interface ExportParams {
     extension: string
     frontmatter: YAMLData
   }) => { filePath: string; url: string } | undefined | null | false
-  onPreProcess?: (note: Note) => Note
+  preProcessNote?: (data: { note: Note; frontmatter: YAMLData }) => any
   onPreExport?: (data: string) => string
 }
 
@@ -91,26 +95,8 @@ export class LiveExporter {
     })
   }
 
-  async getFile(fileId: string): Promise<IDFile> {
-    return this.callApi(`/${fileId}`, {
-      attachments: true
-    })
-  }
-
-  getYamlFrontmatter(tree: Root): Record<string, any> {
-    const yamlNode = tree.children.find(child => child.type === 'yaml') as
-      | YAML
-      | undefined
-    const yamlData = (yaml.load(yamlNode?.value || '') as any) || {}
-    return yamlData
-  }
-
-  extractImages(tree: Root) {
-    const images: ImageNode[] = []
-    visit(tree, { type: 'image' }, el => {
-      images.push(el as ImageNode)
-    })
-    return images
+  async getDoc(docId: string, options: Record<string, any> = {}): Promise<any> {
+    return this.callApi(`/${docId}`, options)
   }
 
   getExtensionForFile(file: IDFile) {
@@ -153,33 +139,69 @@ export class LiveExporter {
     }
   }
 
-  async exportNote(note: Note, params: ExportParams) {
-    log('exporting note:', note.body)
-    if (params.onPreProcess) {
-      note = params.onPreProcess(note)
-    }
-    let md = note.body
+  async parseNote(note: Note, params: ExportParams) {
+    const md = note.body
     const tree = unified().use(remarkParse).use(remarkFrontmatter).parse(md)
-    const yamlData = this.getYamlFrontmatter(tree)
-    const images = this.extractImages(tree)
+    const yamlNode = tree.children.find(child => child.type === 'yaml') as
+      | YAML
+      | undefined
+    const yamlData = (yaml.load(yamlNode?.value || '') as any) || {}
+
+    if (params.preProcessNote) {
+      params.preProcessNote({ note, frontmatter: yamlData })
+    }
+
     log('tree:', JSON.stringify(tree, null, 4))
     log('yaml data:', yamlData)
-    log('images:', images)
+
+    return {
+      note: note,
+      tree,
+      yamlNode,
+      yamlData
+    }
+  }
+
+  async exportNote(note: Note, params: ExportParams) {
+    log('exporting note:', note.body)
+    let md = note.body
+    const { tree, yamlNode, yamlData } = await this.parseNote(note, params)
 
     const fnNote = params.pathForNote({ note, frontmatter: yamlData })
 
     if (fnNote) {
-      for (const i of images.reverse()) {
-        const { url } = i
-        if (url.startsWith('inkdrop://file:')) {
-          const [, fileId] = url.match(/inkdrop:\/\/([^\/]*)/) || []
+      const nodes: (ImageNode | LinkNode)[] = []
+      visit(
+        tree,
+        [{ type: 'image' }, { type: 'link' }],
+        el => {
+          if (el.type === 'image' && el.url.startsWith('inkdrop://file:')) {
+            nodes.push(el)
+          } else if (
+            el.type === 'link' &&
+            el.url.startsWith('inkdrop://note/')
+          ) {
+            nodes.push(el)
+          }
+        },
+        true // reverse
+      )
+
+      for (const node of nodes) {
+        /*
+         * Process internal images
+         */
+        if (node.type === 'image') {
+          const [, fileId] = node.url.match(/inkdrop:\/\/([^\/]*)/) || []
           if (fileId) {
             try {
-              const idFile = await this.getFile(fileId)
+              const idFile: IDFile = await this.getDoc(fileId, {
+                attachments: true
+              })
               const ext = this.getExtensionForFile(idFile)
               const { filePath: fnFile, url: urlFile } =
                 params.pathForFile({
-                  mdastNode: i,
+                  mdastNode: node,
                   note,
                   file: idFile,
                   extension: ext,
@@ -187,8 +209,8 @@ export class LiveExporter {
                 }) || {}
               log('file:', idFile)
               log('destF:', fnFile)
-              const start = i.position?.start?.offset
-              const end = i.position?.end?.offset
+              const start = node.position?.start?.offset
+              const end = node.position?.end?.offset
               if (
                 fnFile &&
                 urlFile &&
@@ -197,22 +219,59 @@ export class LiveExporter {
               ) {
                 this.writeFile(fnFile, idFile)
                 const mdImage: ImageNode = {
-                  ...i,
+                  ...node,
                   url: urlFile
                 }
                 const mdImageStr = unified()
                   .use(remarkStringify)
                   .stringify({ type: 'root', children: [mdImage] })
                 md = md.substring(0, start) + mdImageStr + md.substring(end + 1)
+              } else {
+                this.removeExportedFile(fileId)
               }
             } catch (e) {
-              log('Failed to get a file:', fileId, i)
+              log('Failed to get a file:', fileId, node)
               log(e)
             }
-          } else {
-            this.removeExportedFile(fileId)
+          }
+        } else if (node.type === 'link') {
+          /*
+           * Process internal links
+           */
+          const [, noteIdPre] =
+            node.url.match(/inkdrop:\/\/(note\/([^\/]*))/) || []
+          if (noteIdPre && params.urlForNote) {
+            const linkDestNoteId = noteIdPre.replace('/', ':')
+            const linkDestNote: Note = await this.getDoc(linkDestNoteId)
+            const { yamlData } = await this.parseNote(note, params)
+            log('process internal link:', node, linkDestNoteId, yamlData)
+            const url = params.urlForNote({
+              note: linkDestNote,
+              frontmatter: yamlData
+            })
+            const start = node.position?.start?.offset
+            const end = node.position?.end?.offset
+            if (url && start && end) {
+              const mdLink: LinkNode = {
+                ...node,
+                url
+              }
+              const mdLinkStr = unified()
+                .use(remarkStringify)
+                .stringify({ type: 'root', children: [mdLink] })
+              md = md.substring(0, start) + mdLinkStr + md.substring(end + 1)
+            }
           }
         }
+      }
+
+      if (yamlNode) {
+        md =
+          md.substring(0, yamlNode.position?.start.offset || 0) +
+          `---\n` +
+          yaml.dump(yamlData) +
+          `---` +
+          md.substring(yamlNode.position?.end.offset || 0 + 1)
       }
 
       this.writeNote(fnNote, note._id, md)
@@ -261,6 +320,7 @@ export class LiveExporter {
     const notes = await this.getNotes(params.bookId)
     for (const n of notes) {
       await this.exportNote({ ...n }, params)
+      break
     }
 
     if (params.live) {
@@ -269,4 +329,17 @@ export class LiveExporter {
       return true
     }
   }
+}
+
+export const kebabCaseToPascalCase = (string = '') => {
+  return string.replace(/(^\w|-\w)/g, replaceString =>
+    replaceString.replace(/-/, '').toUpperCase()
+  )
+}
+
+export const toKebabCase = (str: string) => {
+  return str
+    .match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g)
+    ?.map(x => x.toLowerCase())
+    ?.join('-')
 }

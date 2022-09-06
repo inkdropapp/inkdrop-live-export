@@ -1,4 +1,4 @@
-import { LiveExporter } from '../src'
+import { LiveExporter, toKebabCase } from '../src'
 import { setTimeout } from 'timers/promises'
 import { jest } from '@jest/globals'
 
@@ -36,9 +36,18 @@ test('Export notes', async () => {
   const sub = await liveExport.start({
     live: true,
     bookId: 'book:9dc6a7a7-a0e4-4eeb-997c-32b385767dc2',
+    preProcessNote: ({ note, frontmatter }) => {
+      frontmatter.title = note.title
+      frontmatter.slug = toKebabCase(note.title)
+    },
     pathForNote: ({ /* note, */ frontmatter }) => {
-      if (frontmatter.slug) {
+      if (frontmatter.public) {
         return `./tmp/${frontmatter.slug}.md`
+      } else return false
+    },
+    urlForNote: ({ frontmatter }) => {
+      if (frontmatter.public) {
+        return `./${frontmatter.slug}.md`
       } else return false
     },
     pathForFile: ({ mdastNode, /* note, file, */ extension, frontmatter }) => {
