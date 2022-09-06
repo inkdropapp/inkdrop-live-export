@@ -36,12 +36,12 @@ test('Export notes', async () => {
   const sub = await liveExport.start({
     live: true,
     bookId: 'book:9dc6a7a7-a0e4-4eeb-997c-32b385767dc2',
-    pathForNote: ({ note, frontmatter }) => {
+    pathForNote: ({ /* note, */ frontmatter }) => {
       if (frontmatter.slug) {
         return `./tmp/${frontmatter.slug}.md`
       } else return false
     },
-    pathForFile: ({ mdastNode, note, file, extension, frontmatter }) => {
+    pathForFile: ({ mdastNode, /* note, file, */ extension, frontmatter }) => {
       if (frontmatter.slug && mdastNode.alt) {
         const fn = `${frontmatter.slug}_${mdastNode.alt}${extension}`
         return {
