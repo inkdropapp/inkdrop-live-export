@@ -56,9 +56,7 @@ export class LiveExporter {
       'Basic ' + Buffer.from(username + ':' + password).toString('base64')
     )
     const url = new URL(`http://${hostname || 'localhost'}:${port}${path}`)
-    log('query:', query)
     Object.keys(query).forEach(key => url.searchParams.append(key, query[key]))
-    log('url:', url)
 
     const response = await fetch(url, {
       method: 'GET',
@@ -134,6 +132,7 @@ export class LiveExporter {
     const base64Data = file._attachments.index.data as string
     const data = Buffer.from(base64Data, 'base64')
     fs.writeFileSync(toPath, data)
+    this.fileNameMap[file._id] = toPath
   }
 
   writeNote(toPath: string, noteId: string, md: string) {
@@ -142,6 +141,15 @@ export class LiveExporter {
       fs.unlinkSync(oldPath)
     }
     fs.writeFileSync(toPath, md)
+    this.fileNameMap[noteId] = toPath
+  }
+
+  removeExportedFile(docId: string) {
+    const filePath = this.fileNameMap[docId]
+    if (filePath) {
+      fs.unlinkSync(filePath)
+      delete this.fileNameMap[docId]
+    }
   }
 
   async exportNote(note: Note, params: ExportParams) {
@@ -187,7 +195,6 @@ export class LiveExporter {
                 typeof end === 'number'
               ) {
                 this.writeFile(fnFile, idFile)
-                this.fileNameMap[idFile._id] = fnFile
                 const mdImage: ImageNode = {
                   ...i,
                   url: urlFile
@@ -201,12 +208,15 @@ export class LiveExporter {
               log('Failed to get a file:', fileId, i)
               log(e)
             }
+          } else {
+            this.removeExportedFile(fileId)
           }
         }
       }
 
       this.writeNote(fnNote, note._id, md)
-      this.fileNameMap[note._id] = fnNote
+    } else {
+      this.removeExportedFile(note._id)
     }
   }
 
@@ -223,10 +233,8 @@ export class LiveExporter {
             const note = change.doc
             await this.exportNote(note, params)
           }
-          const fnForId = this.fileNameMap[change.id]
-          if (change.doc._deleted && fnForId) {
-            fs.unlinkSync(fnForId)
-            delete this.fileNameMap[change.id]
+          if (change.doc._deleted) {
+            this.removeExportedFile(change.id)
           }
         }
 
