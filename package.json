@@ -1,18 +1,26 @@
 {
-  "name": "@craftzdog/inkdrop-live-export",
-  "version": "1.0.0",
+  "name": "@inkdropapp/live-export",
+  "version": "0.1.0",
   "description": "",
   "type": "module",
-  "exports": "index.js",
+  "exports": {
+    "import": "./lib/index.js",
+    "require": "./lib/index.cjs"
+  },
+  "types": "lib/index.d.ts",
+  "main": "lib/index.cjs",
+  "module": "lib/index.js",
   "scripts": {
     "build": "rollup -c",
     "lint": "eslint src __tests__",
     "test": "NODE_OPTIONS=--experimental-vm-modules DEBUG=inkdrop:* jest --config jest.config.js --runInBand",
     "prepublishOnly": "npm-run-all lint test build"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "Inkdrop"
+  ],
+  "author": "Takuya Matsuyama <t@inkdrop.app>",
+  "license": "MIT",
   "dependencies": {
     "ajv": "^8.11.0",
     "debug": "^4.3.4",
@@ -25,6 +33,8 @@
     "unist-util-visit": "^4.1.1"
   },
   "devDependencies": {
+    "@rollup/plugin-node-resolve": "^13.3.0",
+    "@rollup/plugin-typescript": "^8.5.0",
     "@types/jest": "^29.0.0",
     "@types/js-yaml": "^4.0.5",
     "@typescript-eslint/eslint-plugin": "^5.36.1",
@@ -34,8 +44,6 @@
     "jest": "^28.1.3",
     "prettier": "^2.7.1",
     "rollup": "^2.79.0",
-    "rollup-plugin-terser": "^7.0.2",
-    "rollup-plugin-typescript2": "^0.33.0",
     "ts-jest": "^28.0.8",
     "typescript": "^4.8.2"
   }

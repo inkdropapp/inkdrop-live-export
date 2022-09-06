@@ -5,11 +5,13 @@
     "noUnusedLocals": false,
     "strict": true,
     "target": "es2020",
-    "module": "node16",
+    "module": "esnext",
     "newLine": "lf",
     "moduleResolution": "node16",
     "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationDir": "./lib"
   },
   "include": ["src/*.ts"]
 }
