@@ -28,18 +28,33 @@ interface ExportParams {
   pathForNote: (data: {
     note: Note
     frontmatter: YAMLData
-  }) => string | undefined | null | false
+  }) =>
+    | string
+    | undefined
+    | null
+    | false
+    | Promise<string | undefined | null | false>
   urlForNote?: (data: {
     note: Note
     frontmatter: YAMLData
-  }) => string | undefined | null | false
+  }) =>
+    | string
+    | undefined
+    | null
+    | false
+    | Promise<string | undefined | null | false>
   pathForFile: (data: {
     mdastNode: ImageNode
     note: Note
     file: IDFile
     extension: string
     frontmatter: YAMLData
-  }) => { filePath: string; url: string } | undefined | null | false
+  }) =>
+    | { filePath: string; url: string }
+    | undefined
+    | null
+    | false
+    | Promise<{ filePath: string; url: string } | undefined | null | false>
   preProcessNote?: (data: { note: Note; frontmatter: YAMLData }) => any
   onPreExport?: (data: string) => string
 }
@@ -166,7 +181,7 @@ export class LiveExporter {
     let md = note.body
     const { tree, yamlNode, yamlData } = await this.parseNote(note, params)
 
-    const fnNote = params.pathForNote({ note, frontmatter: yamlData })
+    const fnNote = await params.pathForNote({ note, frontmatter: yamlData })
 
     if (fnNote) {
       const nodes: (ImageNode | LinkNode)[] = []
@@ -199,13 +214,13 @@ export class LiveExporter {
               })
               const ext = this.getExtensionForFile(idFile)
               const { filePath: fnFile, url: urlFile } =
-                params.pathForFile({
+                (await params.pathForFile({
                   mdastNode: node,
                   note,
                   file: idFile,
                   extension: ext,
                   frontmatter: yamlData
-                }) || {}
+                })) || {}
               log('file:', idFile)
               log('destF:', fnFile)
               const start = node.position?.start?.offset
@@ -244,7 +259,7 @@ export class LiveExporter {
             const linkDestNote: Note = await this.getDoc(linkDestNoteId)
             const { yamlData } = await this.parseNote(note, params)
             log('process internal link:', node, linkDestNoteId, yamlData)
-            const url = params.urlForNote({
+            const url = await params.urlForNote({
               note: linkDestNote,
               frontmatter: yamlData
             })
