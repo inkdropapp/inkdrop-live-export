@@ -7,7 +7,7 @@ import remarkFrontmatter from 'remark-frontmatter'
 import remarkStringify from 'remark-stringify'
 import { visit } from 'unist-util-visit'
 import yaml from 'js-yaml'
-import { YAML, Image as ImageNode, Link as LinkNode } from 'mdast'
+import { YAML, Image as ImageNode, Link as LinkNode, Root } from 'mdast'
 
 const log = debug('inkdrop:export')
 
