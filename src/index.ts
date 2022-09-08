@@ -55,7 +55,11 @@ interface ExportParams {
     | null
     | false
     | Promise<{ filePath: string; url: string } | undefined | null | false>
-  preProcessNote?: (data: { note: Note; frontmatter: YAMLData }) => any
+  preProcessNote?: (data: {
+    note: Note
+    frontmatter: YAMLData
+    mdast: Root
+  }) => any
   onPreExport?: (data: string) => string
 }
 
@@ -162,7 +166,7 @@ export class LiveExporter {
     const yamlData = (yaml.load(yamlNode?.value || '') as any) || {}
 
     if (params.preProcessNote) {
-      params.preProcessNote({ note, frontmatter: yamlData })
+      params.preProcessNote({ note, frontmatter: yamlData, mdast: tree })
     }
 
     log('tree:', JSON.stringify(tree, null, 4))
