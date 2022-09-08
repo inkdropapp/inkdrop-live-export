@@ -15,9 +15,14 @@ beforeAll(() => {
 })
 
 test('Check API reachability', async () => {
-  const res = await liveExport.callApi('/')
-  expect(typeof res).toBe('object')
-  expect(res.ok).toBe(true)
+  try {
+    const res = await liveExport.callApi('/')
+    expect(typeof res).toBe('object')
+    expect(res.ok).toBe(true)
+  } catch (e) {
+    console.error(e)
+    throw e
+  }
 })
 
 test('Get latest sequence number', async () => {
@@ -26,16 +31,14 @@ test('Get latest sequence number', async () => {
 })
 
 test('Get notes with bookId', async () => {
-  const res = await liveExport.getNotes(
-    'book:9dc6a7a7-a0e4-4eeb-997c-32b385767dc2'
-  )
+  const res = await liveExport.getNotes('book:-wDNxxN_a')
   expect(typeof res).toBe('object')
 })
 
 test('Export notes', async () => {
   const sub = await liveExport.start({
     live: true,
-    bookId: 'book:9dc6a7a7-a0e4-4eeb-997c-32b385767dc2',
+    bookId: 'book:-wDNxxN_a',
     preProcessNote: ({ note, frontmatter }) => {
       frontmatter.title = note.title
       frontmatter.slug = toKebabCase(note.title)
@@ -52,12 +55,22 @@ test('Export notes', async () => {
     },
     pathForFile: ({ mdastNode, /* note, file, */ extension, frontmatter }) => {
       if (frontmatter.slug && mdastNode.alt) {
-        const fn = `${frontmatter.slug}_${mdastNode.alt}${extension}`
-        return {
+        const fn = `${frontmatter.slug}_${toKebabCase(
+          mdastNode.alt
+        )}${extension}`
+        const res = {
           filePath: `./tmp/${fn}`,
           url: `./${fn}`
         }
+        if (mdastNode.alt === 'thumbnail') {
+          frontmatter.heroImage = res.filePath
+        }
+        return res
       } else return false
+    },
+    postProcessNote: ({ md }) => {
+      const md2 = md.replace(/\!\[thumbnail\]\(.*\)\n/, '')
+      return md2
     }
   })
   expect(typeof sub).toBe('object')

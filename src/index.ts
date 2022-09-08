@@ -60,12 +60,18 @@ interface ExportParams {
     frontmatter: YAMLData
     mdast: Root
   }) => any
-  onPreExport?: (data: string) => string
+  postProcessNote?: (data: { md: string; frontmatter: YAMLData }) => string
+}
+
+export const extractDocIdFromUri = (uri: string): string | undefined => {
+  const [, fileId] = uri.match(/inkdrop:\/\/([^\/]*)/) || []
+  return fileId
 }
 
 export class LiveExporter {
   config: LiveExportConfig
   fileNameMap: { [id: string]: string } = {}
+  exportParams: ExportParams | undefined
 
   constructor(config: LiveExportConfig) {
     this.config = config
@@ -78,13 +84,14 @@ export class LiveExporter {
       'Authorization',
       'Basic ' + Buffer.from(username + ':' + password).toString('base64')
     )
-    const url = new URL(`http://${hostname || 'localhost'}:${port}${path}`)
+    const url = new URL(`http://${hostname || '127.0.0.1'}:${port}${path}`)
     Object.keys(query).forEach(key => url.searchParams.append(key, query[key]))
 
     const response = await fetch(url, {
       method: 'GET',
       headers
     }).then(response => response.json())
+    log('response:', response)
 
     return response
   }
@@ -210,7 +217,7 @@ export class LiveExporter {
          * Process internal images
          */
         if (node.type === 'image') {
-          const [, fileId] = node.url.match(/inkdrop:\/\/([^\/]*)/) || []
+          const fileId = extractDocIdFromUri(node.url)
           if (fileId) {
             try {
               const idFile: IDFile = await this.getDoc(fileId, {
@@ -292,6 +299,9 @@ export class LiveExporter {
           md.substring(yamlNode.position?.end.offset || 0 + 1)
       }
 
+      md = params.postProcessNote
+        ? params.postProcessNote({ md, frontmatter: yamlData })
+        : md
       this.writeNote(fnNote, note._id, md)
     } else {
       this.removeExportedFile(note._id)
@@ -335,10 +345,10 @@ export class LiveExporter {
   ): Promise<{ stop: () => void }>
   async start(params: ExportParams & { live: undefined | false }): Promise<true>
   async start(params: ExportParams) {
+    this.exportParams = params
     const notes = await this.getNotes(params.bookId)
     for (const n of notes) {
       await this.exportNote({ ...n }, params)
-      break
     }
 
     if (params.live) {
