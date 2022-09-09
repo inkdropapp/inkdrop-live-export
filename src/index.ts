@@ -25,6 +25,9 @@ interface ExportParams {
   bookId: string
   since?: number
   filter?: (note: Note) => boolean
+  /**
+   * Generate a path to export the specified note
+   */
   pathForNote: (data: {
     note: Note
     frontmatter: YAMLData
@@ -35,6 +38,10 @@ interface ExportParams {
     | null
     | false
     | Promise<string | undefined | null | false>
+  /**
+   * Generate a URL for the specified note.
+   * It is necessary to link from the note to another note.
+   */
   urlForNote?: (data: {
     note: Note
     frontmatter: YAMLData
@@ -45,6 +52,9 @@ interface ExportParams {
     | null
     | false
     | Promise<string | undefined | null | false>
+  /**
+   * Generate a path and URL to export the specified image file
+   */
   pathForFile: (data: {
     mdastNode: ImageNode
     note: Note
@@ -58,12 +68,22 @@ interface ExportParams {
     | null
     | false
     | Promise<{ filePath: string; url: string } | undefined | null | false>
+  /**
+   * Pre-process the specified note.
+   * It is useful to update the frontmatter information based on the note metadata.
+   */
   preProcessNote?: (data: {
     note: Note
     frontmatter: YAMLData
     tags: Tag[]
     mdast: Root
   }) => any
+  /**
+   * Post-process the specified note right before writing the note to a file.
+   * It is useful to tweak the Markdown data (e.g., deleting unnecessary lines).
+   *
+   * @returns {string} The processed Markdown data
+   */
   postProcessNote?: (data: {
     md: string
     frontmatter: YAMLData
