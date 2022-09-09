@@ -77,18 +77,18 @@ interface ExportParams {
     frontmatter: YAMLData
     tags: Tag[]
     mdast: Root
-  }) => any
+  }) => any | Promise<any>
   /**
    * Post-process the specified note right before writing the note to a file.
    * It is useful to tweak the Markdown data (e.g., deleting unnecessary lines).
    *
-   * @returns {string} The processed Markdown data
+   * @returns The processed Markdown data
    */
   postProcessNote?: (data: {
     md: string
     frontmatter: YAMLData
     tags: Tag[]
-  }) => string
+  }) => string | Promise<string>
 }
 
 export const extractDocIdFromUri = (uri: string): string | undefined => {
@@ -206,7 +206,7 @@ export class LiveExporter {
     const tags = (note.tags || []).map(t => this.tagMap[t]).filter(t => !!t)
 
     if (params.preProcessNote) {
-      params.preProcessNote({
+      await params.preProcessNote({
         note,
         frontmatter: yamlData,
         mdast: tree,
@@ -348,7 +348,7 @@ export class LiveExporter {
       }
 
       md = params.postProcessNote
-        ? params.postProcessNote({
+        ? await params.postProcessNote({
           md,
           frontmatter: yamlData,
           tags
