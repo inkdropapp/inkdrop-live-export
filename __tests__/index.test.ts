@@ -39,9 +39,10 @@ test('Export notes', async () => {
   const sub = await liveExport.start({
     live: true,
     bookId: 'book:-wDNxxN_a',
-    preProcessNote: ({ note, frontmatter }) => {
+    preProcessNote: ({ note, frontmatter, tags }) => {
       frontmatter.title = note.title
       frontmatter.slug = toKebabCase(note.title)
+      frontmatter.tags = tags.map(t => t.name)
     },
     pathForNote: ({ /* note, */ frontmatter }) => {
       if (frontmatter.public) {

@@ -1,6 +1,6 @@
 import debug from 'debug'
 import fs from 'fs'
-import { Note, File as IDFile } from 'inkdrop-model'
+import { Note, File as IDFile, Tag } from 'inkdrop-model'
 import { unified } from 'unified'
 import remarkParse from 'remark-parse'
 import remarkFrontmatter from 'remark-frontmatter'
@@ -28,6 +28,7 @@ interface ExportParams {
   pathForNote: (data: {
     note: Note
     frontmatter: YAMLData
+    tags: Tag[]
   }) =>
     | string
     | undefined
@@ -37,6 +38,7 @@ interface ExportParams {
   urlForNote?: (data: {
     note: Note
     frontmatter: YAMLData
+    tags: Tag[]
   }) =>
     | string
     | undefined
@@ -49,6 +51,7 @@ interface ExportParams {
     file: IDFile
     extension: string
     frontmatter: YAMLData
+    tags: Tag[]
   }) =>
     | { filePath: string; url: string }
     | undefined
@@ -58,9 +61,14 @@ interface ExportParams {
   preProcessNote?: (data: {
     note: Note
     frontmatter: YAMLData
+    tags: Tag[]
     mdast: Root
   }) => any
-  postProcessNote?: (data: { md: string; frontmatter: YAMLData }) => string
+  postProcessNote?: (data: {
+    md: string
+    frontmatter: YAMLData
+    tags: Tag[]
+  }) => string
 }
 
 export const extractDocIdFromUri = (uri: string): string | undefined => {
@@ -71,7 +79,7 @@ export const extractDocIdFromUri = (uri: string): string | undefined => {
 export class LiveExporter {
   config: LiveExportConfig
   fileNameMap: { [id: string]: string } = {}
-  exportParams: ExportParams | undefined
+  tagMap: { [id: string]: Tag } = {}
 
   constructor(config: LiveExportConfig) {
     this.config = config
@@ -118,6 +126,10 @@ export class LiveExporter {
       sort: 'updatedAt',
       descending: true
     })
+  }
+
+  async getTags(): Promise<Tag[]> {
+    return this.callApi('/tags', {})
   }
 
   async getDoc(docId: string, options: Record<string, any> = {}): Promise<any> {
@@ -171,9 +183,15 @@ export class LiveExporter {
       | YAML
       | undefined
     const yamlData = (yaml.load(yamlNode?.value || '') as any) || {}
+    const tags = (note.tags || []).map(t => this.tagMap[t]).filter(t => !!t)
 
     if (params.preProcessNote) {
-      params.preProcessNote({ note, frontmatter: yamlData, mdast: tree })
+      params.preProcessNote({
+        note,
+        frontmatter: yamlData,
+        mdast: tree,
+        tags
+      })
     }
 
     log('tree:', JSON.stringify(tree, null, 4))
@@ -183,16 +201,24 @@ export class LiveExporter {
       note: note,
       tree,
       yamlNode,
-      yamlData
+      yamlData,
+      tags
     }
   }
 
   async exportNote(note: Note, params: ExportParams) {
     log('exporting note:', note.body)
     let md = note.body
-    const { tree, yamlNode, yamlData } = await this.parseNote(note, params)
+    const { tree, yamlNode, yamlData, tags } = await this.parseNote(
+      note,
+      params
+    )
 
-    const fnNote = await params.pathForNote({ note, frontmatter: yamlData })
+    const fnNote = await params.pathForNote({
+      note,
+      frontmatter: yamlData,
+      tags
+    })
 
     if (fnNote) {
       const nodes: (ImageNode | LinkNode)[] = []
@@ -230,7 +256,8 @@ export class LiveExporter {
                   note,
                   file: idFile,
                   extension: ext,
-                  frontmatter: yamlData
+                  frontmatter: yamlData,
+                  tags
                 })) || {}
               log('file:', idFile)
               log('destF:', fnFile)
@@ -272,7 +299,8 @@ export class LiveExporter {
             log('process internal link:', node, linkDestNoteId, yamlData)
             const url = await params.urlForNote({
               note: linkDestNote,
-              frontmatter: yamlData
+              frontmatter: yamlData,
+              tags
             })
             const start = node.position?.start?.offset
             const end = node.position?.end?.offset
@@ -300,7 +328,11 @@ export class LiveExporter {
       }
 
       md = params.postProcessNote
-        ? params.postProcessNote({ md, frontmatter: yamlData })
+        ? params.postProcessNote({
+          md,
+          frontmatter: yamlData,
+          tags
+        })
         : md
       this.writeNote(fnNote, note._id, md)
     } else {
@@ -345,7 +377,8 @@ export class LiveExporter {
   ): Promise<{ stop: () => void }>
   async start(params: ExportParams & { live: undefined | false }): Promise<true>
   async start(params: ExportParams) {
-    this.exportParams = params
+    const tags = await this.getTags()
+    this.tagMap = tags.reduce((map, t) => ({ ...map, [t._id]: t }), {})
     const notes = await this.getNotes(params.bookId)
     for (const n of notes) {
       await this.exportNote({ ...n }, params)
