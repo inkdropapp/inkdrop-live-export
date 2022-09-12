@@ -144,7 +144,8 @@ export class LiveExporter {
     return this.callApi('/notes', {
       keyword: `bookId:${bookId}`,
       sort: 'updatedAt',
-      descending: true
+      descending: true,
+      limit: 100
     })
   }
 
