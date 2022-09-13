@@ -9,7 +9,11 @@ import { visit } from 'unist-util-visit'
 import yaml from 'js-yaml'
 import { YAML, Image as ImageNode, Link as LinkNode, Root } from 'mdast'
 
-const log = debug('inkdrop:export')
+const logger = {
+  debug: debug('inkdrop:export:debug'),
+  info: debug('inkdrop:export:info'),
+  error: debug('inkdrop:export:error')
+}
 
 type YAMLData = Record<string, any>
 
@@ -119,7 +123,7 @@ export class LiveExporter {
       method: 'GET',
       headers
     }).then(response => response.json())
-    log('response:', response)
+    logger.debug('response:', response)
 
     return response
   }
@@ -215,8 +219,8 @@ export class LiveExporter {
       })
     }
 
-    log('tree:', JSON.stringify(tree, null, 4))
-    log('yaml data:', yamlData)
+    logger.debug('tree:', JSON.stringify(tree, null, 4))
+    logger.debug('yaml data:', yamlData)
 
     return {
       note: note,
@@ -228,7 +232,7 @@ export class LiveExporter {
   }
 
   async exportNote(note: Note, params: ExportParams) {
-    log('exporting note:', note.body)
+    logger.info('Exporting note:', note._id, note.title)
     let md = note.body
     const { tree, yamlNode, yamlData, tags } = await this.parseNote(
       note,
@@ -267,6 +271,7 @@ export class LiveExporter {
           const fileId = extractDocIdFromUri(node.url)
           if (fileId) {
             try {
+              logger.info('Exporting image:', fileId)
               const idFile: IDFile = await this.getDoc(fileId, {
                 attachments: true
               })
@@ -280,8 +285,8 @@ export class LiveExporter {
                   frontmatter: yamlData,
                   tags
                 })) || {}
-              log('file:', idFile)
-              log('destF:', fnFile)
+              logger.debug('file:', idFile)
+              logger.debug('destF:', fnFile)
               const start = node.position?.start?.offset
               const end = node.position?.end?.offset
               if (
@@ -303,8 +308,8 @@ export class LiveExporter {
                 this.removeExportedFile(fileId)
               }
             } catch (e) {
-              log('Failed to get a file:', fileId, node)
-              log(e)
+              logger.error('Failed to get a file:', fileId, node)
+              logger.error(e)
             }
           }
         } else if (node.type === 'link') {
@@ -317,7 +322,12 @@ export class LiveExporter {
             const linkDestNoteId = noteIdPre.replace('/', ':')
             const linkDestNote: Note = await this.getDoc(linkDestNoteId)
             const { yamlData } = await this.parseNote(note, params)
-            log('process internal link:', node, linkDestNoteId, yamlData)
+            logger.debug(
+              'Found an internal link:',
+              node,
+              linkDestNoteId,
+              yamlData
+            )
             const url = await params.urlForNote({
               note: linkDestNote,
               frontmatter: yamlData,
@@ -362,6 +372,7 @@ export class LiveExporter {
   }
 
   async watchChanges(params: ExportParams) {
+    logger.info('Watching changes..')
     let since = params.since ?? (await this.getLatestSeq())
     const timer = setInterval(async () => {
       try {
@@ -381,7 +392,7 @@ export class LiveExporter {
 
         since = last_seq
       } catch (e) {
-        log(e)
+        logger.error(e)
         clearInterval(timer)
       }
     }, 500)
