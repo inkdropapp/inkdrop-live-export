@@ -321,7 +321,7 @@ export class LiveExporter {
           if (noteIdPre && params.urlForNote) {
             const linkDestNoteId = noteIdPre.replace('/', ':')
             const linkDestNote: Note = await this.getDoc(linkDestNoteId)
-            const { yamlData } = await this.parseNote(note, params)
+            const { yamlData } = await this.parseNote(linkDestNote, params)
             logger.debug(
               'Found an internal link:',
               node,

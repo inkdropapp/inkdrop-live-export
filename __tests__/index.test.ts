@@ -51,7 +51,7 @@ test('Export notes', async () => {
     },
     urlForNote: ({ frontmatter }) => {
       if (frontmatter.public) {
-        return `./${frontmatter.slug}.md`
+        return `/posts/${frontmatter.slug}`
       } else return false
     },
     pathForFile: ({ mdastNode, /* note, file, */ extension, frontmatter }) => {
