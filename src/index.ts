@@ -380,7 +380,8 @@ export class LiveExporter {
         for (const change of results) {
           if (
             change.id.startsWith('note:') &&
-            change.doc.bookId === params.bookId
+            change.doc.bookId === params.bookId &&
+            change.seq > since
           ) {
             const note = change.doc
             await this.exportNote(note, params)
@@ -390,7 +391,7 @@ export class LiveExporter {
           }
         }
 
-        since = last_seq
+        since = Number(last_seq)
       } catch (e) {
         logger.error(e)
         clearInterval(timer)
