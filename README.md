@@ -7,6 +7,7 @@ It supports live export, which continuously exports notes as the changes occur.
 ## Prerequisites
 
 * NodeJS >= 16
+* Inkdrop >= 5.5.1
 
 ## How to use it
 
@@ -36,3 +37,8 @@ npm i -D @inkdropapp/live-export
 
 Check out [index.test.ts](./__tests__/index.test.ts) for usage at the moment.
 
+## FAQ
+
+### How can I see the access logs of the local server?
+
+Run the app with a `--enable-logging` flag. See [the documentation](https://docs.inkdrop.app/manual/troubleshooting#enable-logging) for more detail.
