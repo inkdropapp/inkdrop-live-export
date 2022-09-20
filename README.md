@@ -9,6 +9,12 @@ It supports live export, which continuously exports notes as the changes occur.
 * NodeJS >= 16
 * Inkdrop >= 5.5.1
 
+## Demo project
+
+A simple blog.
+
+- https://github.com/craftzdog/craftzdog-uses
+
 ## How to use it
 
 ### Enable the Inkdrop local server
