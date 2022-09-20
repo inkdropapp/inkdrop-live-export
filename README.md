@@ -181,6 +181,9 @@ It is useful to tweak the Markdown data (e.g., deleting unnecessary lines).
 * `data.tags`: An array of [`Tag`](https://docs.inkdrop.app/reference/data-models#tag) - The tags of the note
 * Returns: `string | Promise<string>` - Returns the processed Markdown string
 
+## Debugging
+
+Set environment variable `DEBUG='inkdrop:export:info,inkdrop:export:error'` to enable console outputs
 
 ## FAQ
 
