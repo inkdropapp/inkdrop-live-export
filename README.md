@@ -154,6 +154,7 @@ Generate a path and URL to export the specified image file.
 * `data.note`: [`Note`](https://docs.inkdrop.app/reference/data-models#note) - The note data
 * `data.mdastNode`: [`Image`](https://github.com/syntax-tree/mdast#image) - The mdast node of the image
 * `data.file`: [`File`](https://docs.inkdrop.app/reference/data-models#file) - The attached image file data to export
+* `data.extension`: `string` - The file extension of the image (e.g., '.jpg', '.png')
 * `data.frontmatter`: `Record<string, any>` - The YAML frontmatter of the note
 * `data.tags`: An array of [`Tag`](https://docs.inkdrop.app/reference/data-models#tag) - The tags of the note
 * Returns: `{ filePath: string; url: string } | false | Promise<...>` - A destination file path to export and url to link. If it returns false, the image will be skipped exporting.
