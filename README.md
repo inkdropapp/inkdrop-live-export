@@ -187,3 +187,7 @@ It is useful to tweak the Markdown data (e.g., deleting unnecessary lines).
 ### How can I see the access logs of the local server?
 
 Run the app with a `--enable-logging` flag. See [the documentation](https://docs.inkdrop.app/manual/troubleshooting#enable-logging) for more detail.
+
+### Can I import the notes back to Inkdrop?
+
+No. As it transforms the notes for your projects, they are no longer compatible with Inkdrop.
