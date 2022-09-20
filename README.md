@@ -11,9 +11,10 @@ It supports live export, which continuously exports notes as the changes occur.
 
 ## Demo project
 
-A simple blog.
+A simple blog:
 
 - https://github.com/craftzdog/craftzdog-uses
+- [Video tutorial](https://youtu.be/3_JE76PKBWE)
 
 ## How to use it
 
