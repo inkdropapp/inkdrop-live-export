@@ -88,6 +88,7 @@ const sub = await liveExport.start({
         filePath: `./<PATH_TO_EXPORT_IMAGES>/${fn}`,
         url: `./<URL_TO_LINK_IMAGES>/${fn}`
       }
+      // If the `alt` attribute of the image is 'thumbnail', use it as a hero image
       if (mdastNode.alt === 'thumbnail') {
         frontmatter.heroImage = res.filePath
       }
