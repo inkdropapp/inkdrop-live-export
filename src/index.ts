@@ -28,7 +28,6 @@ interface ExportParams {
   live?: boolean
   bookId: string
   since?: number
-  filter?: (note: Note) => boolean
   /**
    * Generate a path to export the specified note
    */
