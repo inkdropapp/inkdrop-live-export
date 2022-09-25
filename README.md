@@ -6,7 +6,7 @@ It supports live export, which continuously exports notes as the changes occur.
 
 ## Prerequisites
 
-* NodeJS >= 16
+* NodeJS >= 18
 * Inkdrop >= 5.5.1
 
 ## Demo project
