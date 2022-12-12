@@ -156,8 +156,26 @@ export class LiveExporter {
     return this.callApi('/tags', {})
   }
 
+  async getTagsWithIds(ids: string[]): Promise<Tag[]> {
+    const tags: Tag[] = []
+    for (const tagId of ids) {
+      if (this.tagMap[tagId]) {
+        tags.push(this.tagMap[tagId])
+      } else {
+        logger.debug('Fetching a tag:', tagId)
+        const tag = await this.getDoc(tagId)
+        this.tagMap[tagId] = tag
+        tags.push(tag)
+      }
+    }
+    return tags
+  }
+
   async getDoc(docId: string, options: Record<string, any> = {}): Promise<any> {
-    return this.callApi(`/${docId}`, options)
+    const res = await this.callApi(`/${docId}`, options)
+    if (typeof res?.ok === 'boolean' && res.ok === false) {
+      throw new Error(res.error as string || `Failed to get ${docId}`)
+    }
   }
 
   getExtensionForFile(file: IDFile) {
@@ -207,7 +225,7 @@ export class LiveExporter {
       | YAML
       | undefined
     const yamlData = (yaml.load(yamlNode?.value || '') as any) || {}
-    const tags = (note.tags || []).map(t => this.tagMap[t]).filter(t => !!t)
+    const tags = await this.getTagsWithIds(note.tags || [])
 
     if (params.preProcessNote) {
       await params.preProcessNote({
@@ -409,7 +427,8 @@ export class LiveExporter {
   ): Promise<{ stop: () => void }>
   async start(params: ExportParams & { live: undefined | false }): Promise<true>
   async start(params: ExportParams) {
-    const tags = await this.getTags()
+    // const tags = await this.getTags()
+    const tags: Tag[] = []
     this.tagMap = tags.reduce((map, t) => ({ ...map, [t._id]: t }), {})
     const notes = await this.getNotes(params.bookId)
     for (const n of notes) {
