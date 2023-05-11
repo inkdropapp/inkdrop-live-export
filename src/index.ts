@@ -164,8 +164,10 @@ export class LiveExporter {
       } else {
         logger.debug('Fetching a tag:', tagId)
         const tag = await this.getDoc(tagId)
-        this.tagMap[tagId] = tag
-        tags.push(tag)
+        if (tag) {
+          this.tagMap[tagId] = tag
+          tags.push(tag)
+        }
       }
     }
     return tags
@@ -174,7 +176,7 @@ export class LiveExporter {
   async getDoc(docId: string, options: Record<string, any> = {}): Promise<any> {
     const res = await this.callApi(`/${docId}`, options)
     if (typeof res?.ok === 'boolean' && res.ok === false) {
-      throw new Error(res.error as string || `Failed to get ${docId}`)
+      throw new Error((res.error as string) || `Failed to get ${docId}`)
     }
   }
 
@@ -337,30 +339,36 @@ export class LiveExporter {
             node.url.match(/inkdrop:\/\/(note\/([^\/]*))/) || []
           if (noteIdPre && params.urlForNote) {
             const linkDestNoteId = noteIdPre.replace('/', ':')
-            const linkDestNote: Note = await this.getDoc(linkDestNoteId)
-            const { yamlData } = await this.parseNote(linkDestNote, params)
-            logger.debug(
-              'Found an internal link:',
-              node,
-              linkDestNoteId,
-              yamlData
+            const linkDestNote: Note | undefined = await this.getDoc(
+              linkDestNoteId
             )
-            const url = await params.urlForNote({
-              note: linkDestNote,
-              frontmatter: yamlData,
-              tags
-            })
-            const start = node.position?.start?.offset
-            const end = node.position?.end?.offset
-            if (url && start && end) {
-              const mdLink: LinkNode = {
-                ...node,
-                url
+            if (linkDestNote) {
+              const { yamlData } = await this.parseNote(linkDestNote, params)
+              logger.debug(
+                'Found an internal link:',
+                node,
+                linkDestNoteId,
+                yamlData
+              )
+              const url = await params.urlForNote({
+                note: linkDestNote,
+                frontmatter: yamlData,
+                tags
+              })
+              const start = node.position?.start?.offset
+              const end = node.position?.end?.offset
+              if (url && start && end) {
+                const mdLink: LinkNode = {
+                  ...node,
+                  url
+                }
+                const mdLinkStr = unified()
+                  .use(remarkStringify)
+                  .stringify({ type: 'root', children: [mdLink] })
+                md = md.substring(0, start) + mdLinkStr + md.substring(end + 1)
               }
-              const mdLinkStr = unified()
-                .use(remarkStringify)
-                .stringify({ type: 'root', children: [mdLink] })
-              md = md.substring(0, start) + mdLinkStr + md.substring(end + 1)
+            } else {
+              logger.error('Failed to get a note:', linkDestNoteId)
             }
           }
         }
@@ -377,10 +385,10 @@ export class LiveExporter {
 
       md = params.postProcessNote
         ? await params.postProcessNote({
-          md,
-          frontmatter: yamlData,
-          tags
-        })
+            md,
+            frontmatter: yamlData,
+            tags
+          })
         : md
       this.writeNote(fnNote, note._id, md)
     } else {
