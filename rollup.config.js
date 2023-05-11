@@ -1,7 +1,6 @@
 import path from 'path'
 import packageJson from './package.json'
 import typescript from '@rollup/plugin-typescript'
-import resolve from '@rollup/plugin-node-resolve'
 
 const baseName = path.join('lib', 'index')
 
@@ -27,6 +26,6 @@ export default [
       ...Object.keys(packageJson.dependencies),
       ...Object.keys(packageJson.peerDependencies || [])
     ],
-    plugins: [typescript(), resolve()]
+    plugins: [typescript()]
   }
 ]
