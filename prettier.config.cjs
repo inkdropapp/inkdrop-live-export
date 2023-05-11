@@ -8,4 +8,4 @@ const options = {
   trailingComma: 'none'
 }
 
-export default options
+module.exports = options
