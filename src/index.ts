@@ -178,6 +178,7 @@ export class LiveExporter {
     if (typeof res?.ok === 'boolean' && res.ok === false) {
       throw new Error((res.error as string) || `Failed to get ${docId}`)
     }
+    return res
   }
 
   getExtensionForFile(file: IDFile) {
