@@ -22,7 +22,7 @@
   "author": "Takuya Matsuyama <t@inkdrop.app>",
   "license": "MIT",
   "dependencies": {
-    "ajv": "^8.11.0",
+    "ajv": "^8.12.0",
     "debug": "^4.3.4",
     "inkdrop-model": "^2.7.1",
     "js-yaml": "^4.1.0",
@@ -30,7 +30,7 @@
     "remark-parse": "^10.0.1",
     "remark-stringify": "^10.0.2",
     "unified": "^10.1.2",
-    "unist-util-visit": "^4.1.1"
+    "unist-util-visit": "^4.1.2"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^15.0.2",
