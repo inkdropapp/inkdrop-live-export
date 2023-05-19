@@ -122,7 +122,13 @@ export class LiveExporter {
       method: 'GET',
       headers
     }).then(response => response.json())
-    logger.debug('response:', response)
+    logger.debug(
+      'callApi:',
+      path,
+      query,
+      'response:',
+      JSON.stringify(response, null, 4)
+    )
 
     return response
   }
