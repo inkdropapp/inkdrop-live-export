@@ -108,7 +108,7 @@ export class LiveExporter {
     this.config = config
   }
 
-  async callApi(path: string, query: Record<string, any> = {}) {
+  async callApi(path: string, query: Record<string, any> = {}): Promise<any> {
     const { hostname, username, password, port } = this.config
     const headers = new Headers()
     headers.set(
