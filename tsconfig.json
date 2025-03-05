@@ -7,7 +7,7 @@
     "target": "es2020",
     "module": "esnext",
     "newLine": "lf",
-    "moduleResolution": "node",
+    "moduleResolution": "node16",
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "declaration": true,
